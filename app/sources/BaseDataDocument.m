@@ -1938,7 +1938,6 @@ cancelled:;
         }
                 
         dispatch_apply(length, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(size_t location) {
-//        for (unsigned long long location = 0; location < length; location++) {
             uint8_t byte = (uint8_t)(dataBytes[location]);
             NSColor *color = [gradientColors objectAtIndex:(NSUInteger)byte];
             
@@ -1946,7 +1945,6 @@ cancelled:;
             colorBytes[colorLocation++] = (unsigned char)([color redComponent] * 255);
             colorBytes[colorLocation++] = (unsigned char)([color greenComponent] * 255);
             colorBytes[colorLocation] = (unsigned char)([color blueComponent] * 255);
-//        }
         });
         
         NSData *dataToWrite = [NSData dataWithBytes:colorBytes length:length * 3];
