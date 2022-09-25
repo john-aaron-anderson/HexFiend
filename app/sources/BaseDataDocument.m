@@ -1909,6 +1909,43 @@ cancelled:;
     }
 }
 
+- (IBAction)exportRawFile:(id)sender
+{
+    USE(sender);
+    
+    NSSavePanel *savePanel = [NSSavePanel savePanel];
+    savePanel.allowedFileTypes = @[@"raw"];
+    HFController *capturedController = controller;
+    NSGradient *colorGradient = [[NSGradient alloc] initWithColors:@[NSColor.blackColor, NSColor.redColor, NSColor.blueColor, NSColor.whiteColor]];
+    
+    [savePanel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
+        if (response != NSModalResponseOK) {
+            return;
+        }
+        
+        NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:savePanel.URL.path];
+        
+        unsigned long long length = capturedController.byteArray.length;
+        for (unsigned long long location = 0; location < length; location++) {
+            unsigned char *dataBytes = malloc(1);
+            [capturedController.byteArray copyBytes:dataBytes range:HFRangeMake(location, 1)];
+            uint8_t byte = (uint8_t)(dataBytes[0]);
+            CGFloat gradientLocation = (CGFloat)((double)byte / 255);
+            NSColor *color = [colorGradient interpolatedColorAtLocation:gradientLocation];
+            
+            unsigned char colorBytes[3];
+            colorBytes[0] = (unsigned char)([color redComponent] * 255);
+            colorBytes[1] = (unsigned char)([color greenComponent] * 255);
+            colorBytes[2] = (unsigned char)([color blueComponent] * 255);
+            NSData *data = [NSData dataWithBytes:dataBytes length:1];
+            
+            [handle writeData:data];
+        }
+        
+        [handle closeFile];
+    }];
+}
+
 - (BOOL)isTransient {
     return isTransient;
 }
