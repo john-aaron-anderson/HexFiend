@@ -1913,7 +1913,13 @@ cancelled:;
 {
     USE(sender);
     
+    // calculate the new filename with a string suffix
+    size_t pixelHeight = (size_t)ceil((double)(((size_t)controller.byteArray.length) / 80));
+    NSString *originalFilenameWithoutExtension = self.fileURL.URLByDeletingPathExtension.lastPathComponent;
+    NSString *filenameWithSuffix = [NSString stringWithFormat:@"%@_80x%lu.raw", originalFilenameWithoutExtension, pixelHeight];
+    
     NSSavePanel *savePanel = [NSSavePanel savePanel];
+    savePanel.nameFieldStringValue = filenameWithSuffix;
     savePanel.allowedFileTypes = @[@"raw"];
     HFController *capturedController = controller;
     
