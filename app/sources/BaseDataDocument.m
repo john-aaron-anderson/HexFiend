@@ -1923,26 +1923,27 @@ cancelled:;
             return;
         }
         
-        NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:savePanel.URL.path];
-        
         unsigned long long length = capturedController.byteArray.length;
+        unsigned char *dataBytes = malloc(length);
+        unsigned char *colorBytes = malloc(length * 3);
+        [capturedController copyBytes:dataBytes range:HFRangeMake(0, length)];
+        
         for (unsigned long long location = 0; location < length; location++) {
-            unsigned char *dataBytes = malloc(1);
-            [capturedController.byteArray copyBytes:dataBytes range:HFRangeMake(location, 1)];
-            uint8_t byte = (uint8_t)(dataBytes[0]);
-            CGFloat gradientLocation = (CGFloat)((double)byte / 255);
-            NSColor *color = [colorGradient interpolatedColorAtLocation:gradientLocation];
-            
-            unsigned char colorBytes[3];
-            colorBytes[0] = (unsigned char)([color redComponent] * 255);
-            colorBytes[1] = (unsigned char)([color greenComponent] * 255);
-            colorBytes[2] = (unsigned char)([color blueComponent] * 255);
-            NSData *data = [NSData dataWithBytes:dataBytes length:1];
-            
-            [handle writeData:data];
+            @autoreleasepool {
+                uint8_t byte = (uint8_t)(dataBytes[location]);
+                CGFloat gradientLocation = (CGFloat)((double)byte / 255);
+                NSColor *color = [colorGradient interpolatedColorAtLocation:gradientLocation];
+                
+                unsigned long long colorLocation = location * 3;
+                colorBytes[colorLocation++] = (unsigned char)([color redComponent] * 255);
+                colorBytes[colorLocation++] = (unsigned char)([color greenComponent] * 255);
+                colorBytes[colorLocation] = (unsigned char)([color blueComponent] * 255);
+            }
         }
         
-        [handle closeFile];
+        NSData *dataToWrite = [NSData dataWithBytes:colorBytes length:length * 3];
+        [dataToWrite writeToURL:savePanel.URL atomically:YES];
+        NSLog(@"finished");
     }];
 }
 
