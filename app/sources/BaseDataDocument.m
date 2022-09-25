@@ -1916,7 +1916,6 @@ cancelled:;
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     savePanel.allowedFileTypes = @[@"raw"];
     HFController *capturedController = controller;
-    NSGradient *colorGradient = [[NSGradient alloc] initWithColors:@[NSColor.blackColor, NSColor.redColor, NSColor.blueColor, NSColor.whiteColor]];
     
     [savePanel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
         if (response != NSModalResponseOK) {
@@ -1928,22 +1927,30 @@ cancelled:;
         unsigned char *colorBytes = malloc(length * 3);
         [capturedController copyBytes:dataBytes range:HFRangeMake(0, length)];
         
-        for (unsigned long long location = 0; location < length; location++) {
-            @autoreleasepool {
-                uint8_t byte = (uint8_t)(dataBytes[location]);
-                CGFloat gradientLocation = (CGFloat)((double)byte / 255);
-                NSColor *color = [colorGradient interpolatedColorAtLocation:gradientLocation];
-                
-                unsigned long long colorLocation = location * 3;
-                colorBytes[colorLocation++] = (unsigned char)([color redComponent] * 255);
-                colorBytes[colorLocation++] = (unsigned char)([color greenComponent] * 255);
-                colorBytes[colorLocation] = (unsigned char)([color blueComponent] * 255);
-            }
+        // pre-cache gradient colors
+        NSGradient *colorGradient = [[NSGradient alloc] initWithColors:@[NSColor.blackColor, NSColor.redColor, NSColor.greenColor, NSColor.blueColor, NSColor.whiteColor]];
+        NSMutableArray *gradientColors = [NSMutableArray arrayWithCapacity:256];
+        
+        for (int colorIdx = 0; colorIdx < 256; colorIdx++) {
+            CGFloat gradientLocation = (CGFloat)((double)colorIdx / 255);
+            NSColor *colorForArray = [colorGradient interpolatedColorAtLocation:gradientLocation];
+            [gradientColors addObject:colorForArray];
         }
+                
+        dispatch_apply(length, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(size_t location) {
+//        for (unsigned long long location = 0; location < length; location++) {
+            uint8_t byte = (uint8_t)(dataBytes[location]);
+            NSColor *color = [gradientColors objectAtIndex:(NSUInteger)byte];
+            
+            unsigned long long colorLocation = location * 3;
+            colorBytes[colorLocation++] = (unsigned char)([color redComponent] * 255);
+            colorBytes[colorLocation++] = (unsigned char)([color greenComponent] * 255);
+            colorBytes[colorLocation] = (unsigned char)([color blueComponent] * 255);
+//        }
+        });
         
         NSData *dataToWrite = [NSData dataWithBytes:colorBytes length:length * 3];
         [dataToWrite writeToURL:savePanel.URL atomically:YES];
-        NSLog(@"finished");
     }];
 }
 

@@ -298,6 +298,8 @@
     }
     if (bits & (HFControllerColorBytes)) {
         if([[self controller] shouldColorBytes]) {
+            
+            // pre-cache gradient colors
             CGFloat cOn = 1.0;
             CGFloat cOff = 0.6;
             NSColor *blackColor = [NSColor colorWithWhite:0.9 alpha:1.0];
@@ -307,9 +309,16 @@
             NSColor *whiteColor = [NSColor colorWithWhite:cOn alpha:1.0];
             NSGradient *colorGradient = [[NSGradient alloc] initWithColors: @[blackColor, redColor, greenColor, blueColor, whiteColor]];
             
+            NSMutableArray *gradientColors = [NSMutableArray arrayWithCapacity:256];
+            
+            for (int colorIdx = 0; colorIdx < 256; colorIdx++) {
+                CGFloat gradientLocation = (CGFloat)((double)colorIdx / 255);
+                NSColor *colorForArray = [colorGradient interpolatedColorAtLocation:gradientLocation];
+                [gradientColors addObject:colorForArray];
+            }
+            
             [(HFRepresenterTextView *)[self view] setByteColoring: ^(uint8_t byte, uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *a){
-                CGFloat gradientLocation = (CGFloat)((double)byte / 255);
-                NSColor *color = [colorGradient interpolatedColorAtLocation:gradientLocation];
+                NSColor *color = [gradientColors objectAtIndex:(NSUInteger)byte];
                 *r = (uint8_t)([color redComponent] * 255);
                 *g = (uint8_t)([color greenComponent] * 255);
                 *b = (uint8_t)([color blueComponent] * 255);
