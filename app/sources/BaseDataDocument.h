@@ -100,6 +100,8 @@ extern NSString * const BaseDataDocumentDidChangeStringEncodingNotification;
 - (IBAction)setBookmark:sender;
 - (IBAction)deleteBookmark:sender;
 
+- (IBAction)exportRawFile:(id)sender;
+
 + (HFByteArray *)byteArrayfromURL:(NSURL *)absoluteURL error:(NSError **)outError;
 - (HFByteArray *)byteArray; //accessed during diffing
 
